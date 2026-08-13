@@ -150,7 +150,7 @@ col1, col2 = st.columns(2)
 with col1:
     entry_date = st.date_input("Business Date", value=datetime.now())
 with col2:
-    business_name = st.text_input("Business Name", "ELITE BRAID & HAIR STYLIST")
+    business_name = st.text_input("Business Name", "")
 
 st.divider()
 
