@@ -148,7 +148,7 @@ st.write("Record live sales and expenses per date, track drawer balances securel
 # 1. Date & Business Info
 col1, col2 = st.columns(2)
 with col1:
-    entry_date = st.date_input("Business Date", datetime.today())
+    entry_date = st.date_input("Business Date", value=datetime.now())
 with col2:
     business_name = st.text_input("Business Name", "ELITE BRAID & HAIR STYLIST")
 
