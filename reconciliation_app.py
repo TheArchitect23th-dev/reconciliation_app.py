@@ -5,9 +5,59 @@ from datetime import datetime
 # Page Configuration
 st.set_page_config(page_title="Daily Sales & Cash Reconciliation", page_icon="📊", layout="centered")
 
-# Custom CSS with strict A4 page sizing and media print styling to fix blank page/white looping issues
+# --- CUSTOM EXECUTIVE LOGIN & APP STYLING ---
 st.markdown("""
     <style>
+    /* Dark executive theme styling for login & app */
+    .stApp {
+        background-color: #0e1726;
+        color: #e2e8f0;
+    }
+    
+    /* Elegant Login Card Box */
+    .login-card {
+        background-color: #1b2a4a;
+        padding: 35px;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        text-align: center;
+        max-width: 500px;
+        margin: 40px auto 20px auto;
+        border: 1px solid #273e70;
+    }
+    
+    .login-card h2 {
+        color: #38bdf8;
+        font-family: Arial, sans-serif;
+        margin-bottom: 5px;
+        font-size: 28px;
+    }
+    
+    .login-card p {
+        color: #94a3b8;
+        font-size: 14px;
+        margin-top: 0;
+    }
+
+    /* Classic, elegant styling for primary action buttons */
+    .stButton button {
+        background-color: #1b365d !important;
+        color: #ffffff !important;
+        border: 1px solid #273e70 !important;
+        border-radius: 6px !important;
+        font-weight: 500 !important;
+        letter-spacing: 0.5px !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 4px rgba(27, 54, 93, 0.2) !important;
+        width: 100% !important;
+    }
+    
+    .stButton button:hover {
+        background-color: #24487a !important;
+        border-color: #38bdf8 !important;
+        box-shadow: 0 4px 8px rgba(56, 189, 248, 0.25) !important;
+    }
+
     @media print {
         /* Hide all Streamlit layout chrome, sidebars, headers, and navigation */
         header, footer, [data-testid="stSidebar"], [data-testid="stHeader"], .stToolbar, .stActionButton {
@@ -56,6 +106,40 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
+# --- PASSWORD PROTECTION & LOGIN SCREEN ---
+def check_password():
+    if "password_correct" not in st.session_state or not st.session_state["password_correct"]:
+        st.markdown("""
+            <div class="login-card">
+                <h2>🏨 Secure Login</h2>
+                <p>Daily Sales & Cash Reconciliation System</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        col_spacer1, col_login, col_spacer2 = st.columns([1, 2, 1])
+        with col_login:
+            pwd = st.text_input("Enter Password", type="password", key="password_input", label_visibility="collapsed", placeholder="Enter Password")
+            if st.button("Login to System"):
+                if pwd == "Godslove":
+                    st.session_state["password_correct"] = True
+                    st.rerun()
+                else:
+                    st.error("😕 Password incorrect. Please try again.")
+        return False
+    else:
+        return True
+
+if not check_password():
+    st.stop()
+
+# Logout Sidebar Control
+with st.sidebar:
+    st.write("### Session Control")
+    if st.button("🔒 Logout"):
+        st.session_state["password_correct"] = False
+        st.rerun()
+# ---------------------------------
 
 # App Header
 st.title("📊 Daily Sales & Cash Reconciliation")
@@ -231,16 +315,16 @@ if st.button("📈 Generate Final Day Report"):
 
     st.write("")
     
-    # Fully working direct print trigger button using Streamlit components
+    # Fully working direct print trigger button using classic hotel executive aesthetic
     st.components.v1.html(
         f"""
         <div style="padding: 10px 0; text-align: center;">
-            <button onclick="parent.window.print();" style="width: 100%; background-color: #2e7d32; color: white; padding: 14px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-                🖨️ Click Here to Print / Save Report as PDF
+            <button onclick="parent.window.print();" style="width: 100%; background-color: #1b365d; color: white; padding: 12px 20px; border: 1px solid #273e70; border-radius: 6px; font-weight: 500; letter-spacing: 0.5px; cursor: pointer; font-size: 15px; box-shadow: 0 2px 4px rgba(27, 54, 93, 0.2);">
+                🖨️ Print / Save Report as PDF
             </button>
         </div>
         """,
-        height=80
+        height=70
     )
 
     st.write("")
@@ -257,3 +341,12 @@ if st.button("📈 Generate Final Day Report"):
         file_name=f"sales_report_{entry_date}.csv",
         mime="text/csv",
     )
+
+st.divider()
+
+# --- QUICK WALK-AWAY LOCK BUTTON ---
+st.write("### 🚶‍♂️ Walk Away / Quick Lock")
+st.write("Leaving your desk temporarily? Click below to instantly lock the screen.")
+if st.button("🔒 Lock Work Session"):
+    st.session_state["password_correct"] = False
+    st.rerun()
