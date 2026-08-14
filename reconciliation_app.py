@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 
 # Page Configuration
-st.set_page_config(page_title="Daily Sales & Cash Reconciliation", page_icon="📊", layout="centered")
+st.set_page_config(page_title="Daily Sales & Cash Tracker", page_icon="📊", layout="centered")
 
 # --- CUSTOM EXECUTIVE LOGIN & APP STYLING ---
 st.markdown("""
@@ -112,8 +112,8 @@ def check_password():
     if "password_correct" not in st.session_state or not st.session_state["password_correct"]:
         st.markdown("""
             <div class="login-card">
-                <h2>🏨 Secure Login</h2>
-                <p>Daily Sales & Cash Reconciliation System</p>
+                <h2>🔒 Secure Login</h2>
+                <p>Daily Sales & Cash Tracker</p>
             </div>
         """, unsafe_allow_html=True)
         
@@ -142,7 +142,7 @@ with st.sidebar:
 # ---------------------------------
 
 # App Header
-st.title("📊 Daily Sales & Cash Reconciliation")
+st.title("📊 Daily Sales & Cash Tracker")
 st.write("Record live sales and expenses per date, track drawer balances securely, and print clean single-page reports.")
 
 # 1. Date & Business Info
