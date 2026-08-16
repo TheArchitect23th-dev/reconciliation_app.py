@@ -1,10 +1,12 @@
-# reconciliation_app_10.py
+# reconciliation_app_15.py
 from datetime import date, datetime, timezone
 import calendar
 import pandas as pd
 from streamlit import runtime
 import streamlit as st
 from supabase import Client, create_client
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
 # --- FULL MULTI-LANGUAGE INTEGRATION ---
 LANGUAGES = {
@@ -61,10 +63,23 @@ TRANSLATIONS = {
         "print_pdf": "🖨️ Print / Save Report as PDF",
         "download_csv": "📥 Download Daily Summary (CSV)",
         "monthly_report_title": "Monthly Sales Report",
-        "total_sales_label": "Total Sales",
+        "total_sales": "Total Sales",
+        "total_cash": "Total Cash",
+        "total_mobile": "Total Mobile Money",
         "monthly_total_sales": "Total Monthly Sales",
         "monthly_total_cash": "Total Monthly Cash",
         "monthly_report_button": "Generate Monthly Report",
+        "daily_report_title": "Daily Sales Report",
+        "report_date_range": "Report Date Range",
+        "expenses_title": "Expenses",
+        "variance": "Variance",
+        "select_report_type": "Select Report Type",
+        "report_daily": "Daily",
+        "report_weekly": "Weekly",
+        "report_monthly": "Monthly",
+        "report_yearly": "Yearly",
+        "start_date": "Start Date",
+        "end_date": "End Date",
     },
     "sw": {
         "nav_title": "🧭 Vichupo vya Urambazaji",
@@ -110,10 +125,23 @@ TRANSLATIONS = {
         "print_pdf": "🖨️ Chapisha / Hifadhi Ripoti kama PDF",
         "download_csv": "📥 Pakua Muhtasari wa Kila Siku (CSV)",
         "monthly_report_title": "Ripoti ya Mauzo ya Mwezi",
-        "total_sales_label": "Jumla ya Mauzo",
+        "total_sales": "Jumla ya Mauzo",
+        "total_cash": "Jumla ya Pesa Taslimu",
+        "total_mobile": "Jumla ya Pesa za Simu",
         "monthly_total_sales": "Jumla ya Mauzo ya Mwezi",
         "monthly_total_cash": "Jumla ya Fedha ya Mwezi",
         "monthly_report_button": "Tengeneza Ripoti ya Mwezi",
+        "daily_report_title": "Ripoti ya Mauzo ya Kila Siku",
+        "report_date_range": "Kiwango cha Tarehe ya Ripoti",
+        "expenses_title": "Matumizi",
+        "variance": "Tofauti",
+        "select_report_type": "Chagua Aina ya Ripoti",
+        "report_daily": "Kila Siku",
+        "report_weekly": "Kila Wiki",
+        "report_monthly": "Kila Mwezi",
+        "report_yearly": "Kila Mwaka",
+        "start_date": "Tarehe ya Kuanza",
+        "end_date": "Tarehe ya Mwisho",
     },
     "zh": {
         "nav_title": "🧭 导航选项卡",
@@ -159,10 +187,23 @@ TRANSLATIONS = {
         "print_pdf": "🖨️ 打印 / 保存报告为 PDF",
         "download_csv": "📥 下载每日汇总 (CSV)",
         "monthly_report_title": "月度销售报告",
-        "total_sales_label": "总销售额",
+        "total_sales": "总销售额",
+        "total_cash": "现金总额",
+        "total_mobile": "移动支付总额",
         "monthly_total_sales": "本月总销售额",
         "monthly_total_cash": "本月现金总额",
         "monthly_report_button": "生成月度报告",
+        "daily_report_title": "每日销售报告",
+        "report_date_range": "报告日期范围",
+        "expenses_title": "支出",
+        "variance": "差额",
+        "select_report_type": "选择报告类型",
+        "report_daily": "每日",
+        "report_weekly": "每周",
+        "report_monthly": "每月",
+        "report_yearly": "每年",
+        "start_date": "开始日期",
+        "end_date": "结束日期",
     },
     "de": {
         "nav_title": "🧭 Navigation",
@@ -208,10 +249,23 @@ TRANSLATIONS = {
         "print_pdf": "🖨️ Bericht drucken / als PDF speichern",
         "download_csv": "📥 Tagesübersicht herunterladen (CSV)",
         "monthly_report_title": "Monatlicher Verkaufsbericht",
-        "total_sales_label": "Gesamtumsatz",
+        "total_sales": "Gesamtumsatz",
+        "total_cash": "Gesamtes Bargeld",
+        "total_mobile": "Gesamtes mobiles Geld",
         "monthly_total_sales": "Gesamtumsatz des Monats",
         "monthly_total_cash": "Gesamtbargeld des Monats",
         "monthly_report_button": "Monatsbericht erstellen",
+        "daily_report_title": "Täglicher Verkaufsbericht",
+        "report_date_range": "Berichtszeitraum",
+        "expenses_title": "Ausgaben",
+        "variance": "Differenz",
+        "select_report_type": "Berichtstyp auswählen",
+        "report_daily": "Täglich",
+        "report_weekly": "Wöchentlich",
+        "report_monthly": "Monatlich",
+        "report_yearly": "Jährlich",
+        "start_date": "Startdatum",
+        "end_date": "Enddatum",
     },
     "fr": {
         "nav_title": "🧭 Onglets de Navigation",
@@ -257,78 +311,175 @@ TRANSLATIONS = {
         "print_pdf": "🖨️ Imprimer / Enregistrer le Rapport en PDF",
         "download_csv": "📥 Télécharger le Résumé Quotidien (CSV)",
         "monthly_report_title": "Rapport Mensuel des Ventes",
-        "total_sales_label": "Ventes Totales",
+        "total_sales": "Ventes Totales",
+        "total_cash": "Total Espèces",
+        "total_mobile": "Total Paiement Mobile",
         "monthly_total_sales": "Ventes Totales du Mois",
         "monthly_total_cash": "Total de Caisse du Mois",
         "monthly_report_button": "Générer le rapport mensuel",
+        "daily_report_title": "Rapport des Ventes Quotidiennes",
+        "report_date_range": "Plage de dates du rapport",
+        "expenses_title": "Dépenses",
+        "variance": "Écart",
+        "select_report_type": "Sélectionner le Type de Rapport",
+        "report_daily": "Quotidien",
+        "report_weekly": "Hebdomadaire",
+        "report_monthly": "Mensuel",
+        "report_yearly": "Annuel",
+        "start_date": "Date de Début",
+        "end_date": "Date de Fin",
     },
 }
 
+# Explicit translations update for specific labels and signature lines
+TRANSLATIONS.update({
+    "opening_float": {
+        "en": "Opening Float",
+        "sw": "Fedha ya Mwanzo",
+        "zh": "开业备用金",
+        "de": "Anfangsbestand",
+        "fr": "Fond de Caisse Initial",
+    },
+    "cash_counted": {
+        "en": "Cash Counted",
+        "sw": "Fedha Iliyohesabiwa",
+        "zh": "清点现金",
+        "de": "Gezähltes Bargeld",
+        "fr": "Caisse Comptée",
+    },
+    "expected_cash": {
+        "en": "Expected Cash in Drawer",
+        "sw": "Fedha Inayotarajiwa Kwenye Droo",
+        "zh": "预计抽屉现金",
+        "de": "Erwartetes Bargeld in der Kasse",
+        "fr": "Espèces Attendues en Caisse",
+    },
+    "variance": {
+        "en": "Variance",
+        "sw": "Tofauti",
+        "zh": "差额",
+        "de": "Differenz",
+        "fr": "Écart",
+    },
+    "staff_name": {
+        "en": "Staff Name",
+        "sw": "Jina la Mfanyakazi",
+        "zh": "员工姓名",
+        "de": "Name des Mitarbeiters",
+        "fr": "Nom du Personnel",
+    },
+    "staff_signature": {
+        "en": "Staff Signature",
+        "sw": "Sahihi ya Mfanyakazi",
+        "zh": "员工签名",
+        "de": "Unterschrift Mitarbeiter",
+        "fr": "Signature du Personnel",
+    },
+    "manager_name": {
+        "en": "Manager Name",
+        "sw": "Jina la Meneja",
+        "zh": "经理姓名",
+        "de": "Name des Managers",
+        "fr": "Nom du Manager",
+    },
+    "manager_signature": {
+        "en": "Manager Signature",
+        "sw": "Sahihi ya Meneja",
+        "zh": "经理签名",
+        "de": "Unterschrift Manager",
+        "fr": "Signature du Manager",
+    },
+    "daily_report_title": {
+        "en": "Daily Sales Report",
+        "sw": "Ripoti ya Mauzo ya Siku",
+        "zh": "每日销售报告",
+        "de": "Täglicher Verkaufsbericht",
+        "fr": "Rapport des Ventes Quotidiennes",
+    },
+    "weekly_report_title": {
+        "en": "Weekly Sales Report",
+        "sw": "Ripoti ya Mauzo ya Wiki",
+        "zh": "每周销售报告",
+        "de": "Wöchentlicher Verkaufsbericht",
+        "fr": "Rapport Hebdomadaire des Ventes",
+    },
+    "monthly_report_title": {
+        "en": "Monthly Sales Report",
+        "sw": "Ripoti ya Mauzo ya Mwezi",
+        "zh": "月度销售报告",
+        "de": "Monatlicher Verkaufsbericht",
+        "fr": "Rapport Mensuel des Ventes",
+    },
+    "yearly_report_title": {
+        "en": "Yearly Sales Report",
+        "sw": "Ripoti ya Mauzo ya Mwaka",
+        "zh": "年度销售报告",
+        "de": "Jährlicher Verkaufsbericht",
+        "fr": "Rapport Annuel des Ventes",
+    },
+})
 
-# Helper translation function using TRANSLATIONS dictionary
+
+# Helper translation function handling both standard keys and nested multi-language dict keys
 def t_func(key, lang):
-  return TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key, key)
+    translation_entry = TRANSLATIONS.get(key)
+    if isinstance(translation_entry, dict):
+        return translation_entry.get(lang, translation_entry.get("en", key))
+    return TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key, key)
 
 
 # Corrected Monthly Aggregation Function
 def get_monthly_summary(df):
     df["date"] = pd.to_datetime(df["date"])
     df["month"] = df["date"].dt.to_period("M").astype(str)
-
-    monthly = df.groupby("month").agg({
-        "sales": "sum",
-        "cash": "sum"
-    }).reset_index()
-
+    monthly = df.groupby("month").agg({"sales": "sum", "cash": "sum"}).reset_index()
     return monthly.head(10)
 
 
 # Page Configuration
-st.set_page_config(
-    page_title="Cash Tracker", page_icon="📊", layout="centered"
-)
+st.set_page_config(page_title="Cash Tracker", page_icon="📊", layout="centered")
 
 # --- SUPABASE & SUBSCRIPTION FUNCTIONS ---
 try:
-  SUPABASE_URL = st.secrets["SUPABASE_URL"]
-  SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-  supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 except Exception as e:
-  supabase = None
+    supabase = None
 
 
 def get_subscription(user_id: str):
-  if not supabase:
-    return None
-  try:
-    res = (
-        supabase.table("subscriptions")
-        .select("*")
-        .eq("user_id", user_id)
-        .eq("is_active", True)
-        .execute()
-    )
-    if not res.data:
-      return None
-    sub = res.data[0]
-    if sub["expires_at"] is not None:
-      expires = datetime.fromisoformat(sub["expires_at"].replace("Z", "+00:00"))
-      if expires < datetime.now(timezone.utc):
+    if not supabase:
         return None
-    return sub
-  except Exception:
-    return None
+    try:
+        res = (
+            supabase.table("subscriptions")
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("is_active", True)
+            .execute()
+        )
+        if not res.data:
+            return None
+        sub = res.data[0]
+        if sub["expires_at"] is not None:
+            expires = datetime.fromisoformat(sub["expires_at"].replace("Z", "+00:00"))
+            if expires < datetime.now(timezone.utc):
+                return None
+        return sub
+    except Exception:
+        return None
 
 
 def is_subscribed(user_id: str):
-  return get_subscription(user_id) is not None
+    return get_subscription(user_id) is not None
 
 
 def get_plan(user_id: str):
-  sub = get_subscription(user_id)
-  if not sub:
-    return None
-  return sub.get("plan")
+    sub = get_subscription(user_id)
+    if not sub:
+        return None
+    return sub.get("plan")
 
 
 # --- CUSTOM EXECUTIVE LOGIN & APP STYLING ---
@@ -357,7 +508,7 @@ st.markdown(
 
 # --- LANGUAGE SELECTOR & STATE SETUP ---
 if "lang" not in st.session_state:
-  st.session_state["lang"] = "en"
+    st.session_state["lang"] = "en"
 
 selected_lang_code = st.sidebar.selectbox(
     "🌐 Language / Lugha / 语言 / Sprache",
@@ -372,43 +523,43 @@ lang = st.session_state["lang"]
 
 # --- PASSWORD PROTECTION & LOGIN SCREEN ---
 def check_password():
-  if (
-      "password_correct" not in st.session_state
-      or not st.session_state["password_correct"]
-  ):
-    st.markdown(
-        f"""
+    if (
+        "password_correct" not in st.session_state
+        or not st.session_state["password_correct"]
+    ):
+        st.markdown(
+            f"""
             <div class="login-card">
                 <h2>{t['secure_login']}</h2>
                 <p>{t['login_sub']}</p>
             </div>
         """,
-        unsafe_allow_html=True,
-    )
-    col_spacer1, col_login, col_spacer2 = st.columns([1, 2, 1])
-    with col_login:
-      pwd = st.text_input(
-          t["enter_pwd"],
-          type="password",
-          key="password_input",
-          label_visibility="collapsed",
-          placeholder=t["enter_pwd"],
-      )
-      if st.button(t["login_btn"]):
-        if pwd == "Godslove":
-          st.session_state["password_correct"] = True
-          st.session_state["user_id"] = "owner-user-id"
-          st.session_state["user_email"] = "owner@cashtracker.com"
-          st.rerun()
-        else:
-          st.error(t["pwd_error"])
-    return False
-  else:
-    return True
+            unsafe_allow_html=True,
+        )
+        col_spacer1, col_login, col_spacer2 = st.columns([1, 2, 1])
+        with col_login:
+            pwd = st.text_input(
+                t["enter_pwd"],
+                type="password",
+                key="password_input",
+                label_visibility="collapsed",
+                placeholder=t["enter_pwd"],
+            )
+            if st.button(t["login_btn"]):
+                if pwd == "Godslove":
+                    st.session_state["password_correct"] = True
+                    st.session_state["user_id"] = "owner-user-id"
+                    st.session_state["user_email"] = "owner@cashtracker.com"
+                    st.rerun()
+                else:
+                    st.error(t["pwd_error"])
+        return False
+    else:
+        return True
 
 
 if not check_password():
-  st.stop()
+    st.stop()
 
 # --- SUBSCRIPTION & TIER MANAGEMENT SYSTEM ---
 current_user_id = st.session_state.get("user_id", "owner-user-id")
@@ -418,76 +569,122 @@ current_tier = active_sub.get("tier", "Free") if active_sub else "Free"
 
 # --- SIDEBAR NAVIGATION & CONTROLS ---
 with st.sidebar:
-  st.write(f"### {t['nav_title']}")
-
-  app_mode = st.radio(
-      "Select View",
-      [
-          t["view_daily"],
-          t["view_report"],
-          t["view_monthly"],
-      ],
-  )
-
-  st.divider()
-  st.write(f"### {t['sub_status']}")
-
-  if is_pro:
-    st.success(f"{t['pro_active']} ({current_tier.upper()})")
-  else:
-    st.info(t["free_active"])
-    with st.expander(t["choose_plan"]):
-      plan_choice = st.selectbox(
-          t["billing_cycle"],
-          [
-              "Monthly (15,000 TZS)",
-              "Annual (120,000 TZS)",
-              "Lifetime (350,000 TZS)",
-          ],
-      )
-
-  st.divider()
-  st.write(f"### {t['session_control']}")
-  if st.button(t["logout"]):
-    st.session_state["password_correct"] = False
-    st.rerun()
+    st.write(f"### {t['nav_title']}")
+    app_mode = st.radio(
+        "Select View",
+        [
+            t["view_daily"],
+            t["view_report"],
+            t["view_monthly"],
+        ],
+    )
+    st.divider()
+    st.write(f"### {t['sub_status']}")
+    if is_pro:
+        st.success(f"{t['pro_active']} ({current_tier.upper()})")
+    else:
+        st.info(t["free_active"])
+        with st.expander(t["choose_plan"]):
+            plan_choice = st.selectbox(
+                t["billing_cycle"],
+                [
+                    "Monthly (15,000 TZS)",
+                    "Annual (120,000 TZS)",
+                    "Lifetime (350,000 TZS)",
+                ],
+            )
+    st.divider()
+    st.write(f"### {t['session_control']}")
+    if st.button(t["logout"]):
+        st.session_state["password_correct"] = False
+        st.rerun()
 
 if "daily_records" not in st.session_state:
-  st.session_state.daily_records = {}
+    st.session_state.daily_records = {}
 
 
-# --- UPDATED GLOBAL-READY PDF GENERATION FUNCTION ---
-def generate_monthly_pdf(month_data, lang):
-    from reportlab.lib.pagesizes import A4
-    from reportlab.pdfgen import canvas
-
-    file_name = f"monthly_report_{lang}.pdf"
+# --- PDF GENERATION FUNCTION: REQUESTED FORMAT ---
+def generate_a4_report(data, lang, report_type, start_date=None, end_date=None):
+    file_name = f"cash_tracker_report_{report_type}_{lang}.pdf"
     c = canvas.Canvas(file_name, pagesize=A4)
 
-    title = t_func("monthly_report_title", lang)
-    total_sales_label = t_func("monthly_total_sales", lang)
-    total_cash_label = t_func("monthly_total_cash", lang)
+    # Title
+    if report_type == "Daily":
+        title = t_func("daily_report_title", lang)
+    elif report_type == "Weekly":
+        title = t_func("weekly_report_title", lang)
+    elif report_type == "Monthly":
+        title = t_func("monthly_report_title", lang)
+    elif report_type == "Yearly":
+        title = t_func("yearly_report_title", lang)
+    else:
+        title = "Report"
 
-    c.setFont("Helvetica-Bold", 18)
+    c.setFont("Helvetica-Bold", 20)
     c.drawString(50, 800, title)
 
+    # Date range
     c.setFont("Helvetica", 12)
+    if start_date and end_date:
+        c.drawString(50, 780, f"{t_func('report_date_range', lang)} {start_date} - {end_date}")
+    else:
+        today = datetime.now().strftime("%Y-%m-%d")
+        c.drawString(50, 780, f"{t_func('report_date_range', lang)} {today}")
 
-    y = 760
-    for _, row in month_data.iterrows():
-        # Prevent drawing past page boundaries
-        if y < 80:
-            c.showPage()
-            y = 800
-            c.setFont("Helvetica", 12)
-            
-        month_str = str(row["month"])
-        c.drawString(50, y, f"Month: {month_str}")
-        y -= 20
-        c.drawString(70, y, f"{total_sales_label}: {row['sales']:,.2f} TZS")
-        y -= 20
-        c.drawString(70, y, f"{total_cash_label}: {row['cash']:,.2f} TZS")
-        y -= 40
+    y = 750
+
+    # Sales summary
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, t_func("total_sales", lang) + f": {data.get('total_sales', 0):,.2f}")
+    y -= 25
+    c.drawString(50, y, t_func("total_cash", lang) + f": {data.get('total_cash', 0):,.2f}")
+    y -= 25
+    c.drawString(50, y, t_func("total_mobile", lang) + f": {data.get('total_mobile', 0):,.2f}")
+    y -= 40
+
+    # Expenses
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, t_func("expenses_title", lang))
+    y -= 25
+
+    c.setFont("Helvetica", 12)
+    expenses = data.get("expenses", {})
+    if expenses:
+        for item, amount in expenses.items():
+            c.drawString(70, y, f"{item}: {amount:,.2f}")
+            y -= 20
+    else:
+         c.drawString(70, y, "No expenses recorded.")
+         y -= 20
+    y -= 20
+
+    # Opening float
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, t_func("opening_float", lang) + f": {data.get('opening_float', 0):,.2f}")
+    y -= 25
+
+    # Expected cash
+    c.drawString(50, y, t_func("expected_cash", lang) + f": {data.get('expected_cash', 0):,.2f}")
+    y -= 25
+
+    # Cash counted
+    c.drawString(50, y, t_func("cash_counted", lang) + f": {data.get('cash_counted', 0):,.2f}")
+    y -= 25
+
+    # Variance
+    variance = data.get("cash_counted", 0) - data.get("expected_cash", 0)
+    c.drawString(50, y, t_func("variance", lang) + f": {variance:,.2f}")
+    y -= 40
+
+    # Signatures
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, t_func("staff_name", lang) + ": ____________________")
+    c.drawString(300, y, t_func("manager_name", lang) + ": ____________________")
+    y -= 25
+
+    c.setFont("Helvetica", 12)
+    c.drawString(50, y, t_func("staff_signature", lang) + ": ____________________")
+    c.drawString(300, y, t_func("manager_signature", lang) + ": ____________________")
 
     c.showPage()
     c.save()
@@ -499,235 +696,361 @@ def generate_monthly_pdf(month_data, lang):
 # VIEW 1: DAILY DATA ENTRY & AUDIT
 # ---------------------------------
 if app_mode == t["view_daily"]:
-  st.markdown(
-      f"<h1><b>Cash Tracker</b><br><span style='font-size: 20px; font-weight:"
-      f" normal;'>{t['daily_title']}</span></h1>",
-      unsafe_allow_html=True,
-  )
-  st.write(t["daily_desc"])
+    title = t_func("daily_report_title", lang)
+    subtitle = t_func("report_date_range", lang)
 
-  col1, col2 = st.columns(2)
-  with col1:
-    entry_date = st.date_input(t["business_date"], value=datetime.now())
-  with col2:
-    business_name = st.text_input(t["business_name"], "")
-
-  st.divider()
-
-  date_str = str(entry_date)
-  if date_str not in st.session_state.daily_records:
-    st.session_state.daily_records[date_str] = {
-        "transactions": [],
-        "expenses": [],
-        "opening_float": 0.0,
-        "actual_cash_counted": 0.0,
-        "counted_by": "",
-        "manager_name": "",
-    }
-
-  current_data = st.session_state.daily_records[date_str]
-  cash_sales = sum(
-      [item["Amount"] for item in current_data["transactions"] if item["Type"] == "Cash"]
-  )
-  mobile_money = sum(
-      [
-          item["Amount"]
-          for item in current_data["transactions"]
-          if item["Type"] == "Mobile Money"
-      ]
-  )
-  card_sales = sum(
-      [
-          item["Amount"]
-          for item in current_data["transactions"]
-          if item["Type"] == "Card / Bank"
-      ]
-  )
-  credit_sales = sum(
-      [
-          item["Amount"]
-          for item in current_data["transactions"]
-          if item["Type"] == "Credit (Owed)"
-      ]
-  )
-  total_revenue = cash_sales + mobile_money + card_sales + credit_sales
-
-  st.write(
-      f"### {t['live_overview']} for {entry_date.strftime('%Y-%m-%d')}"
-  )
-  metric_col1, metric_col2 = st.columns(2)
-  metric_col1.metric(t["cash_received"], f"{cash_sales:,.2f} TZS")
-  metric_col2.metric(t["mobile_money"], f"{mobile_money:,.2f} TZS")
-
-  st.divider()
-
-  st.subheader(t["add_trans"])
-  with st.form(f"transaction_form_{date_str}", clear_on_submit=True):
-    col3, col4 = st.columns(2)
-    with col3:
-      trans_amount = st.number_input(
-          t["trans_amount"], min_value=0.0, step=500.0, format="%.2f"
-      )
-      trans_type = st.selectbox(
-          t["payment_method"],
-          ["Cash", "Mobile Money", "Card / Bank", "Credit (Owed)"],
-      )
-    with col4:
-      trans_note = st.text_input(t["trans_note"])
-    add_trans_btn = st.form_submit_button(t["add_trans_btn"])
-
-  if add_trans_btn and trans_amount > 0:
-    current_data["transactions"].append({
-        "Time": datetime.now().strftime("%H:%M:%S"),
-        "Type": trans_type,
-        "Amount": trans_amount,
-        "Note": trans_note if trans_note else "-",
-    })
-    st.success(f"Added {trans_amount:,.2f} under {trans_type} for {date_str}!")
-    st.rerun()
-
-  if current_data["transactions"]:
-    st.write(f"### {t['trans_feed']}")
-    st.dataframe(pd.DataFrame(current_data["transactions"]), use_container_width=True)
-
-  st.divider()
-
-  st.subheader(t["add_expense"])
-  with st.form(f"expense_form_{date_str}", clear_on_submit=True):
-    col_e1, col_e2 = st.columns(2)
-    with col_e1:
-      expense_amount = st.number_input(
-          t["expense_amount"], min_value=0.0, step=500.0, format="%.2f"
-      )
-    with col_e2:
-      expense_reason = st.text_input(t["expense_reason"])
-    add_expense_btn = st.form_submit_button(t["add_expense_btn"])
-
-  if add_expense_btn and expense_amount > 0:
-    current_data["expenses"].append({
-        "Time": datetime.now().strftime("%H:%M:%S"),
-        "Amount": expense_amount,
-        "Reason": expense_reason if expense_reason else "Unspecified expense",
-    })
-    st.success(f"Recorded cash out of {expense_amount:,.2f}!")
-    st.rerun()
-
-  total_cash_paid_out = sum([e["Amount"] for e in current_data["expenses"]])
-  if current_data["expenses"]:
-    st.write(f"### {t['expense_feed']}")
-    st.dataframe(pd.DataFrame(current_data["expenses"]), use_container_width=True)
-
-  st.divider()
-
-  st.subheader(t["drawer_audit"])
-  opening_float = st.number_input(
-      t["opening_float"],
-      min_value=0.0,
-      step=1000.0,
-      format="%.2f",
-      value=current_data["opening_float"],
-  )
-  actual_cash_counted = st.number_input(
-      t["actual_cash"],
-      min_value=0.0,
-      step=1000.0,
-      format="%.2f",
-      value=current_data["actual_cash_counted"],
-  )
-
-  col_sig1, col_sig2 = st.columns(2)
-  with col_sig1:
-    counted_by = st.text_input(
-        t["counted_by"], value=current_data["counted_by"]
+    st.markdown(
+        f"<h1><b>Cash Tracker</b><br><span style='font-size: 20px; font-weight:"
+        f" normal;'>{title}</span></h1>",
+        unsafe_allow_html=True,
     )
-  with col_sig2:
-    manager_name = st.text_input(
-        t["manager_name"], value=current_data["manager_name"]
-    )
+    st.write(f"{subtitle}: {datetime.now().strftime('%Y-%m-%d')}")
 
-  current_data["opening_float"] = opening_float
-  current_data["actual_cash_counted"] = actual_cash_counted
-  current_data["counted_by"] = counted_by
-  current_data["manager_name"] = manager_name
+    col1, col2 = st.columns(2)
+    with col1:
+        entry_date = st.date_input(t["business_date"], value=datetime.now())
+    with col2:
+        business_name = st.text_input(t["business_name"], "")
 
-  if st.button(t["gen_report"]):
-    expected_cash_drawer = opening_float + cash_sales - total_cash_paid_out
-    cash_difference = actual_cash_counted - expected_cash_drawer
-    all_reasons = (
-        ", ".join(
-            [f"{e['Reason']} ({e['Amount']:,.2f})" for e in current_data["expenses"]]
+    st.divider()
+
+    date_str = str(entry_date)
+    if date_str not in st.session_state.daily_records:
+        st.session_state.daily_records[date_str] = {
+            "transactions": [],
+            "expenses": [],
+            "opening_float": 0.0,
+            "actual_cash_counted": 0.0,
+            "counted_by": "",
+            "manager_name": "",
+        }
+
+    current_data = st.session_state.daily_records[date_str]
+    cash_sales = sum([
+        item["Amount"]
+        for item in current_data["transactions"]
+        if item["Type"] == "Cash"
+    ])
+    mobile_money = sum([
+        item["Amount"]
+        for item in current_data["transactions"]
+        if item["Type"] == "Mobile Money"
+    ])
+    card_sales = sum([
+        item["Amount"]
+        for item in current_data["transactions"]
+        if item["Type"] == "Card / Bank"
+    ])
+    credit_sales = sum([
+        item["Amount"]
+        for item in current_data["transactions"]
+        if item["Type"] == "Credit (Owed)"
+    ])
+    total_revenue = cash_sales + mobile_money + card_sales + credit_sales
+
+    st.write(f"### {t['live_overview']} for {entry_date.strftime('%Y-%m-%d')}")
+    metric_col1, metric_col2 = st.columns(2)
+    metric_col1.metric(t["cash_received"], f"{cash_sales:,.2f} TZS")
+    metric_col2.metric(t["mobile_money"], f"{mobile_money:,.2f} TZS")
+
+    st.divider()
+
+    st.subheader(t["add_trans"])
+    with st.form(f"transaction_form_{date_str}", clear_on_submit=True):
+        col3, col4 = st.columns(2)
+        with col3:
+            trans_amount = st.number_input(
+                t["trans_amount"], min_value=0.0, step=500.0, format="%.2f"
+            )
+            trans_type = st.selectbox(
+                t["payment_method"],
+                ["Cash", "Mobile Money", "Card / Bank", "Credit (Owed)"],
+            )
+        with col4:
+            trans_note = st.text_input(t["trans_note"])
+        add_trans_btn = st.form_submit_button(t["add_trans_btn"])
+
+    if add_trans_btn and trans_amount > 0:
+        current_data["transactions"].append({
+            "Time": datetime.now().strftime("%H:%M:%S"),
+            "Type": trans_type,
+            "Amount": trans_amount,
+            "Note": trans_note if trans_note else "-",
+        })
+        st.success(f"Added {trans_amount:,.2f} under {trans_type} for {date_str}!")
+        st.rerun()
+
+    if current_data["transactions"]:
+        st.write(f"### {t['trans_feed']}")
+        st.dataframe(
+            pd.DataFrame(current_data["transactions"]), use_container_width=True
         )
-        if current_data["expenses"]
-        else "None specified"
+
+    st.divider()
+
+    st.subheader(t["add_expense"])
+    with st.form(f"expense_form_{date_str}", clear_on_submit=True):
+        col_e1, col_e2 = st.columns(2)
+        with col_e1:
+            expense_amount = st.number_input(
+                t["expense_amount"], min_value=0.0, step=500.0, format="%.2f"
+            )
+        with col_e2:
+            expense_reason = st.text_input(t["expense_reason"])
+        add_expense_btn = st.form_submit_button(t["add_expense_btn"])
+
+    if add_expense_btn and expense_amount > 0:
+        current_data["expenses"].append({
+            "Time": datetime.now().strftime("%H:%M:%S"),
+            "Amount": expense_amount,
+            "Reason": expense_reason if expense_reason else "Unspecified expense",
+        })
+        st.success(f"Recorded cash out of {expense_amount:,.2f}!")
+        st.rerun()
+
+    total_cash_paid_out = sum([e["Amount"] for e in current_data["expenses"]])
+    if current_data["expenses"]:
+        st.write(f"### {t['expense_feed']}")
+        st.dataframe(
+            pd.DataFrame(current_data["expenses"]), use_container_width=True
+        )
+
+    st.divider()
+
+    st.subheader(t["drawer_audit"])
+    opening_float = st.number_input(
+        t_func("opening_float", lang),
+        min_value=0.0,
+        step=1000.0,
+        format="%.2f",
+        value=current_data["opening_float"],
+    )
+    actual_cash_counted = st.number_input(
+        t_func("cash_counted", lang),
+        min_value=0.0,
+        step=1000.0,
+        format="%.2f",
+        value=current_data["actual_cash_counted"],
     )
 
-    report_html = f"""
-        <div id="printable-report" style="width: 100%; max-width: 700px; margin: 0 auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9; color: #000; font-family: Arial, sans-serif;">
-            <h2 style="text-align: center; margin-bottom: 2px;"><b>Cash Tracker</b></h2>
-            <p style="text-align: center;">{business_name if business_name else t['monthly_report_title']}</p>
-            <p><b>Date:</b> {entry_date.strftime('%Y-%m-%d')}</p>
-            <p><b>{t['total_sales_label']}:</b> {total_revenue:,.2f} TZS</p>
-            <p><b>Expected Cash in Drawer:</b> {expected_cash_drawer:,.2f} TZS</p>
-            <p><b>Actual Physical Cash Counted:</b> {actual_cash_counted:,.2f} TZS</p>
-            <p><b>Drawer Variance:</b> {cash_difference:,.2f} TZS</p>
-        </div>
-        """
-    st.markdown(report_html, unsafe_allow_html=True)
-    st.download_button(
-        label=t["download_csv"],
-        data=pd.DataFrame({"Metric": ["Date", t["total_sales_label"]], "Value": [str(entry_date), total_revenue]}).to_csv(index=False).encode("utf-8"),
-        file_name=f"sales_report_{entry_date}.csv",
-        mime="text/csv",
-    )
+    col_sig1, col_sig2 = st.columns(2)
+    with col_sig1:
+        counted_by = st.text_input(
+            t["counted_by"], value=current_data["counted_by"]
+        )
+    with col_sig2:
+        manager_name = st.text_input(
+            t["manager_name"], value=current_data["manager_name"]
+        )
+
+    current_data["opening_float"] = opening_float
+    current_data["actual_cash_counted"] = actual_cash_counted
+    current_data["counted_by"] = counted_by
+    current_data["manager_name"] = manager_name
+
+    if st.button(t["gen_report"]):
+        expected_cash_drawer = opening_float + cash_sales - total_cash_paid_out
+        variance = actual_cash_counted - expected_cash_drawer
+
+        opening_float_str = (
+            f"{t_func('opening_float', lang)}: {opening_float:,.2f} TZS"
+        )
+        actual_cash_str = f"{t_func('cash_counted', lang)}: {actual_cash_counted:,.2f} TZS"
+        expected_cash_str = f"{t_func('expected_cash', lang)}: {expected_cash_drawer:,.2f} TZS"
+
+        # Construct data dictionary for the PDF Generator
+        expense_dict = {exp["Reason"]: exp["Amount"] for exp in current_data["expenses"]}
+        pdf_data = {
+            "total_sales": total_revenue,
+            "total_cash": cash_sales,
+            "total_mobile": mobile_money,
+            "expenses": expense_dict,
+            "opening_float": opening_float,
+            "expected_cash": expected_cash_drawer,
+            "cash_counted": actual_cash_counted
+        }
+        
+        # Generate the PDF Document
+        pdf_file = generate_a4_report(pdf_data, lang, report_type="Daily")
+
+        report_html = f"""
+            <div id="printable-report" style="width: 100%; max-width: 700px; margin: 0 auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9; color: #000; font-family: Arial, sans-serif;">
+                <h2 style="text-align: center; margin-bottom: 2px;"><b>Cash Tracker</b></h2>
+                <p style="text-align: center;">{business_name if business_name else t['monthly_report_title']}</p>
+                <p><b>Date:</b> {entry_date.strftime('%Y-%m-%d')}</p>
+                <p><b>{t['total_sales']}:</b> {total_revenue:,.2f} TZS</p>
+                <p><b>{opening_float_str}</b></p>
+                <p><b>{actual_cash_str}</b></p>
+                <p><b>{expected_cash_str}</b></p>
+                <p><b>{t_func('variance', lang)}:</b> {variance:,.2f} TZS</p>
+                <br><br>
+                <div style="display: flex; justify-content: space-between; margin-top: 30px;">
+                    <div>
+                        <p><b>{t_func('staff_name', lang)}:</b> {counted_by if counted_by else '____________________'}</p>
+                        <p><b>{t_func('staff_signature', lang)}:</b> ____________________</p>
+                    </div>
+                    <div>
+                        <p><b>{t_func('manager_name', lang)}:</b> {manager_name if manager_name else '____________________'}</p>
+                        <p><b>{t_func('manager_signature', lang)}:</b> ____________________</p>
+                    </div>
+                </div>
+            </div>
+            """
+        st.markdown(report_html, unsafe_allow_html=True)
+        
+        col_dl1, col_dl2 = st.columns(2)
+        with col_dl1:
+             st.download_button(
+                 label=t["download_csv"],
+                 data=pd.DataFrame({
+                     "Metric": [
+                         "Date",
+                         t["total_sales"],
+                         t_func("opening_float", lang),
+                         t_func("cash_counted", lang),
+                         t_func("expected_cash", lang),
+                         t_func("variance", lang),
+                         t_func("staff_name", lang),
+                         t_func("manager_name", lang),
+                     ],
+                     "Value": [
+                         str(entry_date),
+                         total_revenue,
+                         opening_float,
+                         actual_cash_counted,
+                         expected_cash_drawer,
+                         variance,
+                         counted_by,
+                         manager_name,
+                     ],
+                 }).to_csv(index=False).encode("utf-8"),
+                 file_name=f"sales_report_{entry_date}.csv",
+                 mime="text/csv",
+             )
+        with col_dl2:
+             with open(pdf_file, "rb") as f:
+                 st.download_button(
+                     label=t["print_pdf"],
+                     data=f,
+                     file_name=pdf_file,
+                     mime="application/pdf"
+                 )
 
 # ----------------------------------------------------
 # VIEW 2 & 3: PRO REPORTS
 # ----------------------------------------------------
 elif app_mode in [t["view_report"], t["view_monthly"]]:
-  if not is_pro:
-    st.markdown(
-        f"""
+    if not is_pro:
+        st.markdown(
+            f"""
             <div class="paywall-card">
                 <h2>🔒 Pro Feature Locked</h2>
                 <p>Advanced Range Reporting and Monthly Statements require an active subscription.</p>
             </div>
         """,
-        unsafe_allow_html=True,
+            unsafe_allow_html=True,
+        )
+        st.stop()
+    st.title(app_mode)
+
+    # --- REPORT TYPE SELECTOR & DYNAMIC FILTERS ---
+    report_type = st.selectbox(
+        t["select_report_type"],
+        [
+            t["report_daily"],
+            t["report_weekly"],
+            t["report_monthly"],
+            t["report_yearly"],
+        ],
     )
-    st.stop()
-  st.title(app_mode)
-  
-  st.write(f"### {t_func('monthly_report_title', lang)}")
-  
-  # Build aggregated mock or real dataframe using stored session records
-  flattened_records = []
-  for d_str, d_dict in st.session_state.get("daily_records", {}).items():
-      t_sales = sum([item["Amount"] for item in d_dict.get("transactions", [])])
-      c_sales = sum([item["Amount"] for item in d_dict.get("transactions", []) if item["Type"] == "Cash"])
-      flattened_records.append({"date": d_str, "sales": t_sales, "cash": c_sales})
-  
-  if flattened_records:
-      df_days = pd.DataFrame(flattened_records)
-      month_summary_df = get_monthly_summary(df_days)
-  else:
-      # Fallback sample DataFrame if no records are logged yet
-      month_summary_df = pd.DataFrame({
-          "month": ["2026-07", "2026-08"],
-          "sales": [1500000.0, 900000.0],
-          "cash": [900000.0, 500000.0]
-      })
-      
-  st.dataframe(month_summary_df, use_container_width=True)
 
-  # Integrated Multi-Language Streamlit Button snippet
-  if st.button(t("monthly_report_button", lang)):
-      monthly = get_monthly_summary(df_days)
-      pdf_file = generate_monthly_pdf(monthly, lang)
+    r_type = "Daily"
+    if report_type == t["report_daily"]:
+        title = t_func("daily_report_title", lang)
+        r_type = "Daily"
+    elif report_type == t["report_weekly"]:
+        title = t_func("weekly_report_title", lang)
+        r_type = "Weekly"
+        start_date = st.date_input(t["start_date"])
+        end_date = st.date_input(t["end_date"])
+    elif report_type == t["report_monthly"]:
+        title = t_func("monthly_report_title", lang)
+        r_type = "Monthly"
+    elif report_type == t["report_yearly"]:
+        title = t_func("yearly_report_title", lang)
+        r_type = "Yearly"
 
-      with open(pdf_file, "rb") as f:
-          st.download_button(
-              label=t("monthly_report_button", lang),
-              data=f,
-              file_name=pdf_file,
-              mime="application/pdf"
-          )
+    st.write(f"### {title}")
+
+    flattened_records = []
+    combined_expenses = {}
+    for d_str, d_dict in st.session_state.get("daily_records", {}).items():
+        t_sales = sum([item["Amount"] for item in d_dict.get("transactions", [])])
+        c_sales = sum([item["Amount"] for item in d_dict.get("transactions", []) if item["Type"] == "Cash"])
+        m_sales = sum([item["Amount"] for item in d_dict.get("transactions", []) if item["Type"] == "Mobile Money"])
+        flattened_records.append({
+            "date": d_str,
+            "sales": t_sales,
+            "cash": c_sales,
+            "mobile": m_sales,
+        })
+        for exp in d_dict.get("expenses", []):
+             combined_expenses[exp["Reason"]] = combined_expenses.get(exp["Reason"], 0) + exp["Amount"]
+
+    if flattened_records:
+        df_days = pd.DataFrame(flattened_records)
+        df_days["date"] = pd.to_datetime(df_days["date"])
+
+        if report_type == t["report_weekly"]:
+            df_filtered = df_days[
+                (df_days["date"] >= pd.to_datetime(start_date))
+                & (df_days["date"] <= pd.to_datetime(end_date))
+            ]
+        else:
+            df_filtered = df_days
+
+        month_summary_df = get_monthly_summary(df_filtered)
+    else:
+        df_days = pd.DataFrame({
+            "date": ["2026-07-15", "2026-08-01"],
+            "sales": [1500000.0, 900000.0],
+            "cash": [900000.0, 500000.0],
+            "mobile": [600000.0, 400000.0],
+        })
+        df_days["date"] = pd.to_datetime(df_days["date"])
+
+        if report_type == t["report_weekly"]:
+            df_filtered = df_days[
+                (df_days["date"] >= pd.to_datetime(start_date))
+                & (df_days["date"] <= pd.to_datetime(end_date))
+            ]
+        else:
+            df_filtered = df_days
+
+        month_summary_df = get_monthly_summary(df_filtered)
+
+    st.dataframe(month_summary_df, use_container_width=True)
+
+    # Use the combined data dictionary for the Pro reports PDF
+    pdf_data = {
+         "total_sales": df_filtered["sales"].sum() if not df_filtered.empty else 0,
+         "total_cash": df_filtered["cash"].sum() if not df_filtered.empty else 0,
+         "total_mobile": df_filtered["mobile"].sum() if not df_filtered.empty else 0,
+         "expenses": combined_expenses,
+         "opening_float": 0, 
+         "expected_cash": 0,
+         "cash_counted": 0
+    }
+    
+    sd = str(start_date) if report_type == t["report_weekly"] else None
+    ed = str(end_date) if report_type == t["report_weekly"] else None
+
+    pdf_file = generate_a4_report(pdf_data, lang, report_type=r_type, start_date=sd, end_date=ed)
+
+    with open(pdf_file, "rb") as f:
+        st.download_button(
+            label="📥 Download Filtered A4 Report (PDF)",
+            data=f,
+            file_name=pdf_file,
+            mime="application/pdf",
+        )
